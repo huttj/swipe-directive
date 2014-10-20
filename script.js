@@ -68,7 +68,7 @@ angular.module('CardTest', [])
       offset: '=offset'
     },
     link: function(scope, element, attrs) {
-      var DRAG_SENSITIVITY = 2;
+      var DRAG_SENSITIVITY = 5;
 
       var image = new Image();
 
@@ -96,10 +96,6 @@ angular.module('CardTest', [])
         x: 0,
         y: 0
       }
-      var lastCoords = {
-        x: 0,
-        y: 0
-      };
 
       var listeners = [];
 
@@ -124,8 +120,7 @@ angular.module('CardTest', [])
 
           touch.on('panend', function(e) {
 
-            var coords = getCoords();
-            scope.$parent.$parent.$broadcast('panend', coords);
+            scope.$parent.$parent.$broadcast('panend', null);
 
             if (
               (e.velocityX * e.deltaX < 0 &&
@@ -142,13 +137,10 @@ angular.module('CardTest', [])
 
               var xVel = Math.abs(e.velocityX) / e.velocityX;
 
-              console.log('xVel', xVel)
-
               translate3d({
                 x: -xVel * window.innerWidth,
                 y: -e.velocityY * window.innerHeight / 2
               }, null, true)
-
 
               setTimeout(function() {
                 scope.$emit('delete card', null);
@@ -156,9 +148,7 @@ angular.module('CardTest', [])
 
             } else {
               element.css('background-position', 'center center');
-              element.css('transition', 'all 300ms ease');
-
-              spring(null, null, true);
+              spring(null, null, null);
             }
 
             // scope.$parent.$parent.$broadcast('panend', coords);
@@ -178,7 +168,6 @@ angular.module('CardTest', [])
                 hdrift = Math.round(Math.min(e.deltaX * DRAG_SENSITIVITY * (scope.hspace / window.innerWidth), scope.hspace) - scope.hspace);
               }
             }
-
 
             if (scope.vspace > 0) {
               if (e.deltaY < 0) {
@@ -210,8 +199,7 @@ angular.module('CardTest', [])
 
           listeners.push(scope.$on('panend', function(event, data) {
 
-            element.css('transition', 'all 300ms ease');
-            spring(data, null, true);
+            spring(null, null, true);
 
           }));
         }
@@ -221,62 +209,20 @@ angular.module('CardTest', [])
       function translate3d(coords, start, broadcast) {
         var start = isNull(start, startCoords);
 
-        var c = [
-          start.x + coords.x,
-          start.y + coords.y,
-          0,
-        ].join('px, ') + 'px';
+        TweenLite.to(element[0], 0, {
+          x: start.x + coords.x,
+          y: start.y + coords.y,
+          z: 0
+        });
 
-        element.css('transform', 'translate3d(' + c + ')');
         if (!broadcast) scope.$parent.$parent.$broadcast('translate', [coords, start]);
       }
 
-
-      var DAMPING = .44;
-      var TIMESCALE = .88;
-
       function spring(coords, start, broadcast) {
-
-        var time = Math.pow(Math.max(isNull(time, 350), 16), TIMESCALE);
-
-        element.css('transition', 'all ' + time + 'ms linear');
-
-        var disCoords = coords || getCoords();
-
-        var x = disCoords.x;
-        var y = disCoords.y;
-
-        var xSign = (x / Math.abs(x)) || 0;
-        var ySign = (y / Math.abs(y)) || 0;
-
-        var adjX = Math.pow(Math.abs(x), DAMPING);
-        var adjY = Math.pow(Math.abs(y), DAMPING);
-
-        var newX = -1 * adjX * xSign;
-        var newY = -1 * adjY * ySign;
-
-        translate3d({
-          x: newX,
-          y: newY
-        }, start, broadcast)
-
-        if (adjX > 5 || adjY > 5) {
-
-          setTimeout(function() {
-            spring({
-              x: newX,
-              y: newY
-            }, null, broadcast, time);
-          }, time);
-
-        } else {
-          setTimeout(function() {
-            translate3d({
-              x: 0,
-              y: 0
-            }, null, broadcast);
-          }, time);
-        }
+        coords = coords || {x: 0, y: 0};
+        coords.ease = Elastic.easeOut;
+        coords.z = 0;
+        TweenLite.to(element[0], .75, coords);
       }
 
       function getCoords() {
