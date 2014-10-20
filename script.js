@@ -10,19 +10,53 @@ angular.module('CardTest', [])
 
 .factory('ImgurGrabber', function($http) {
   var images = [];
-  var i = $http.get('images.json').then(function(result) {
+  var requestResult = $http.get('images.json').then(function(result) {
     images = result.data.sort(function() {
       return Math.random() * 2 - 1;
     });
+    return images;
   });
 
   var index = 0;
   var increment = 6;
 
+  var queue = [];
+  var preloadCounter = 1;
+
+  function preloadImages(imageList) {
+    console.log('Image ' + preloadCounter + ' loading: ' + imageList[0]);
+    var img = document.createElement('img');
+    queue.push(img);
+    img.onload = (function(imageURl, counter) {
+      img.loaded = true;
+      console.log('Image ' + counter + ' finished: ' + imageURl);
+      if (imageList.length > 1) preloadImages(imageList.slice(1));
+    }).bind(null, imageList[0], preloadCounter);
+    preloadCounter++;
+    img.src = imageList[0];
+  }
+
+  function deloadImages() {
+    queue.forEach(function(n) {
+      if (n.loaded) {
+        n.remove();
+      }
+    })
+  }
+
+  requestResult.then(function(i) {
+    preloadImages(i.slice(0, increment).reverse());
+  });
+
   return {
-    images: i,
+    images: requestResult,
     next: function() {
       index += increment;
+
+      deloadImages();
+      preloadList = images.slice(index, index+increment).reverse();
+      preloadImages(preloadList);
+
       return images.slice(index - increment, index);
     }
   };
