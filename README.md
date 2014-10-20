@@ -2,4 +2,4 @@
 
 An update of the Swippl directive from scratch.
 
-### [Demo](https://cdn.rawgit.com/huttj/swipe-directive/839b1f7e5d5f786678cc76078cfde4e84972f195/index.html)
+### [Demo](https://cdn.rawgit.com/huttj/swipe-directive/45814cdbeed2662a506189515b6e4a44f37106d6/index.html)
