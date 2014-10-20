@@ -29,22 +29,25 @@ card {
   border: 1px solid #333;
   border-radius: 4px;
   position: absolute;
-  
+
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
-  
+
   background-color: white;
-  
+
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  
+
   cursor: grab;
   cursor: -webkit-grab;
+
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 card:active {
