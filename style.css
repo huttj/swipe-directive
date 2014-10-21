@@ -65,3 +65,34 @@ card:active {
     margin: 5vh auto;
   }
 }
+
+.msg {
+  color: white;
+  font-family: Verdana;
+  font-size: 4vw;
+  padding: .75vh .75vw;
+  border: 1vw dotted white;
+  border-radius: 2vw;
+  position: absolute;
+  top: 4vh;
+  font-weight: bolder;
+  box-shadow: 0 0 3vw 2vw rgba(0,0,0,.75);
+  /*box-shadow: .5vw .5vh 1vw rgba(0,0,0,.5);*/
+  text-shadow: .25vw .25vh 1vw rgba(0,0,0,.75);
+  background: rgba(0,0,0,.75);
+  opacity: 0;
+}
+
+.dislike {
+  color: red;
+  border-color: red;
+  right: 5vw;
+  transform: rotate(25deg);
+}
+
+.like {
+  color: lime;
+  border-color: lime;
+  left: 5vw;
+  transform: rotate(-25deg);
+}

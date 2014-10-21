@@ -71,7 +71,7 @@ angular.module('CardTest', [])
 .directive('stack', function(ImgurGrabber) {
   return {
     restrict: 'EA',
-    template: '<card ng-repeat="card in cards" image="card" offset="cards.length - $index"></card>',
+    template: '<card ng-repeat="card in cards" image="card" offset="cards.length - $index"><span class="msg dislike">Dislike</span><span class="msg like">Like</span></card>',
     controller: function($scope) {
       ImgurGrabber.images.then(function() {
         $scope.cards = ImgurGrabber.next();
@@ -105,6 +105,9 @@ angular.module('CardTest', [])
       var DRAG_SENSITIVITY = 5;
 
       var image = new Image();
+
+      var like = element[0].getElementsByClassName('like')[0];
+      var dislike = element[0].getElementsByClassName('dislike')[0];
 
       image.onload = function() {
         scope.width = image.width;
@@ -154,15 +157,25 @@ angular.module('CardTest', [])
 
           touch.on('panend', function(e) {
 
-            scope.$parent.$parent.$broadcast('panend', null);
+            projection = {
+              x: e.deltaX,
+              y: e.deltaY,
+              xVel: e.velocityX,
+              yVel: e.velocityY,
+              velocity: Math.sqrt(Math.pow(e.velocityX, 2)+Math.pow(e.velocityY, 2)),
+              distance: Math.sqrt(Math.pow(e.deltaX, 2)+Math.pow(e.deltaY, 2)),
+              rotation: Math.max(Math.min(90*e.deltaX/window.innerWidth, 120), -120)
+            }
+
+            scope.$parent.$parent.$broadcast('panend', projection);
 
             if (
-              (e.velocityX * e.deltaX < 0 &&
+              (e.velocityX * e.deltaX <= 0 &&
                 (
-                  Math.abs(e.velocityX) > .5 ||
+                  Math.abs(e.velocityX) > 0 ||
                   Math.abs(e.deltaX) > (window.innerWidth / 2)
                 )) ||
-              Math.abs(e.velocityX) > 1.75
+              Math.abs(e.velocityX) > 1.5
             ) {
               element.css('transition', 'all 300ms ease');
 
@@ -172,8 +185,9 @@ angular.module('CardTest', [])
               var xVel = Math.abs(e.velocityX) / e.velocityX;
 
               translate3d({
-                x: -xVel * window.innerWidth,
-                y: -e.velocityY * window.innerHeight / 2
+                x: -xVel * window.innerWidth * 1.25,
+                y: -e.velocityY * window.innerHeight / 2,
+                rotation: projection.rotation*1.5
               }, null, true)
 
               setTimeout(function() {
@@ -182,8 +196,11 @@ angular.module('CardTest', [])
 
             } else {
               element.css('background-position', 'center center');
-              spring(null, null, null);
+              spring(null, projection);
             }
+
+            TweenLite.to(like, .5, {opacity: 0});
+            TweenLite.to(dislike, .5, {opacity: 0});
 
             // scope.$parent.$parent.$broadcast('panend', coords);
 
@@ -215,8 +232,17 @@ angular.module('CardTest', [])
 
             translate3d({
               x: e.deltaX,
-              y: e.deltaY
+              y: e.deltaY,
+              rotation: Math.max(Math.min(90*e.deltaX/window.innerWidth, 120), -120)
             });
+
+            like.style.opacity = 2*(e.deltaX / window.innerWidth);
+            dislike.style.opacity = -2*(e.deltaX / window.innerWidth);
+
+            // var deg = Math.max(Math.min(90*e.deltaX/window.innerWidth, 30), -30);
+
+            // TweenLite.to(element[0], 0, {rotation: deg});
+
           });
 
         } else {
@@ -227,13 +253,17 @@ angular.module('CardTest', [])
             element.css('transition', '');
             translate3d({
               x: data[0].x / Math.pow(scope.offset, 1.5),
-              y: data[0].y / Math.pow(scope.offset, 1.5)
+              y: data[0].y / Math.pow(scope.offset, 1.5),
+              rotation: (data[0].rotation || 0) / Math.pow(scope.offset, 1.5)
             }, data[1], true);
           }))
 
           listeners.push(scope.$on('panend', function(event, data) {
-
-            spring(null, null, true);
+            // if (data) {
+            //   data.x = data.x / Math.pow(scope.offset, .2);
+            //   data.y = data.y / Math.pow(scope.offset, .2);
+            // }
+            spring(null, data);
 
           }));
         }
@@ -241,22 +271,41 @@ angular.module('CardTest', [])
       })
 
       function translate3d(coords, start, broadcast) {
+
         var start = isNull(start, startCoords);
 
         TweenLite.to(element[0], 0, {
           x: start.x + coords.x,
           y: start.y + coords.y,
+          rotation: coords.rotation || 0,
           z: 0
         });
 
         if (!broadcast) scope.$parent.$parent.$broadcast('translate', [coords, start]);
       }
 
-      function spring(coords, start, broadcast) {
-        coords = coords || {x: 0, y: 0};
+      function spring(coords, start) {
+        coords = coords || {x: 0, y: 0, rotation: 0};
+
         coords.ease = Elastic.easeOut;
         coords.z = 0;
-        TweenLite.to(element[0], .75, coords);
+        coords.rotation = 0;
+
+        var x0 = start.x / Math.pow(scope.offset, 1.5) + (start.xVel*2)*Math.pow(scope.offset, .5);
+        var y0 = start.y / Math.pow(scope.offset, 1.5) + (start.yVel*2)*Math.pow(scope.offset, .5);
+        var duration = .5 + (.125 * start.velocity);
+
+        console.log(x0, y0)
+
+        // TweenLite.to(element[0], duration, {
+        //   x: x0,
+        //   y: y0,
+        //   ease: Expo.easeOut,
+        //   onComplete: function() {
+            TweenLite.to(element[0], duration, coords);
+        //   }
+        // });
+
       }
 
       function getCoords() {
